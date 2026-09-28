@@ -284,7 +284,7 @@
   <!-- POLAROID 1 — bottom right, video -->
   <div id="polaroid-wrap" class="polaroid-wrap">
     <div class="polaroid-box">
-      <video id="clip" src="clip.mp4" muted playsinline></video>
+      <video id="clip" src="clip.mp4" muted playsinline preload="auto"></video>
       <div class="lyric-wrap">
         <span id="lyric-text" class="lyric-text"></span>
       </div>
@@ -470,13 +470,20 @@
       // Sky arc at 1:35
       setTimeout(() => runSkyArc(0), SKY_START);
 
-      // Polaroid 1 in
+      // Polaroid 1 in — wait for video ready before showing
       setTimeout(() => {
-        polaroid.classList.add('visible');
-        startBounce();
-        LYRICS1.forEach(({ at, text }) => {
-          setTimeout(() => setLyric(lyricText, text), at);
-        });
+        function showPolaroid1() {
+          polaroid.classList.add('visible');
+          startBounce();
+          LYRICS1.forEach(({ at, text }) => {
+            setTimeout(() => setLyric(lyricText, text), at);
+          });
+        }
+        if (clip.readyState >= 3) {
+          showPolaroid1();
+        } else {
+          clip.addEventListener('canplaythrough', showPolaroid1, { once: true });
+        }
       }, P1_IN);
 
       // Polaroid 1 out
