@@ -16,8 +16,7 @@
 
     html, body {
       width: 100%;
-      overflow: hidden;
-      background: #000;
+      overflow-x: hidden;
       font-family: 'Exo', sans-serif;
     }
 
@@ -460,7 +459,6 @@
       }, LIFTOFF + FLYING);
 
       setTimeout(() => {
-        document.body.style.overflow = '';
         content.scrollIntoView({ behavior: 'smooth' });
         content.querySelectorAll('p').forEach((p, i) => {
           setTimeout(() => p.classList.add('visible'), i * 400);
@@ -537,7 +535,6 @@
       // small delay so overlay is fully black first
       setTimeout(() => {
         // scroll to top (locked again)
-        document.body.style.overflow = 'hidden';
         window.scrollTo({ top: 0 });
 
         // reset content paragraphs
