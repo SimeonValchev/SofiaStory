@@ -365,9 +365,10 @@
     const STEP_MS = 33;
 
     function startBounce() {
-      clip.pause();
       bounceDir = 1;
       clip.currentTime = 0;
+      // play then immediately pause to keep Android unlocked for currentTime scrubbing
+      clip.play().then(() => clip.pause()).catch(() => {});
       function tick() {
         clip.currentTime = Math.max(0, Math.min(clip.duration, clip.currentTime + bounceDir * (STEP_MS / 1000)));
         if (clip.currentTime >= clip.duration) bounceDir = -1;
@@ -435,6 +436,11 @@
 
       audio.currentTime = 0;
       audio.play().catch(() => {});
+
+      // Unlock video on Android by playing it immediately (muted, off-screen)
+      // then pause — this grants JS scrubbing permission for the bounce effect
+      clip.style.visibility = 'hidden';
+      clip.play().then(() => { clip.pause(); clip.style.visibility = ''; }).catch(() => {});
 
       // Plane animation
       strip.style.display = 'block';
