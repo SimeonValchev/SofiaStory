@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Iva & Simo</title>
+  <style>
+    @font-face {
+      font-family: 'Exo';
+      src: url('fonts/Exo-VariableFont_wght.ttf') format('truetype');
+      font-weight: 100 900;
+      font-style: normal;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: 'Exo', sans-serif;
+    }
+
+    /* ── HERO SCREEN ── */
+    #hero {
+      position: relative;
+      width: 100%;
+      height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #hero-bg {
+      position: absolute;
+      inset: 0;
+      background: url('bg.jpg') center center / cover no-repeat;
+      z-index: 0;
+    }
+
+    #title-img {
+      position: relative;
+      z-index: 1;
+      width: min(85vw, 420px);
+      image-rendering: pixelated;
+      /* black bg on the PNG — blend it away */
+      mix-blend-mode: screen;
+    }
+
+    #new-game-btn {
+      position: relative;
+      z-index: 1;
+      margin-top: 40px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-family: 'Exo', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      text-shadow: 0 0 8px rgba(255,255,255,0.8);
+    }
+
+    #new-game-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    /* ── PLANE STRIP ── */
+    #plane-strip {
+      position: absolute;
+      bottom: 32px;
+      left: 0;
+      z-index: 2;
+      width: 100%;
+      height: 52px;
+      overflow: hidden;
+      display: none; /* shown when animation starts */
+    }
+
+    #plane {
+      position: absolute;
+      left: -60px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 2.2rem;
+      line-height: 1;
+      white-space: nowrap;
+      /* JS drives left% via a CSS variable and keyframe */
+      animation: none;
+    }
+
+    @keyframes fly-across {
+      from { left: -60px; }
+      to   { left: calc(100% + 20px); }
+    }
+
+    /* ── POLAROID shared ── */
+    .polaroid-wrap {
+      position: fixed;
+      z-index: 10;
+      pointer-events: none;
+      transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .polaroid-box {
+      background: #fff;
+      padding: 10px 10px 0 10px;
+      box-shadow: 4px 6px 24px rgba(0,0,0,0.55);
+      width: min(64vw, 240px);
+    }
+
+    .polaroid-box video,
+    .polaroid-box img {
+      width: 100%;
+      display: block;
+    }
+
+    .lyric-wrap {
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 6px 10px;
+    }
+
+    .lyric-text {
+      color: #222;
+      font-family: 'Exo', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 400;
+      font-style: italic;
+      letter-spacing: 0.03em;
+      text-align: center;
+      line-height: 1.5;
+      transition: opacity 0.4s ease;
+    }
+
+    /* ── POLAROID 1 — bottom right ── */
+    #polaroid-wrap {
+      bottom: 60px;
+      right: 0;
+      transform: translateX(110%);
+    }
+    #polaroid-wrap.visible {
+      transform: translateX(0);
+    }
+
+    /* ── POLAROID 2 — top left ── */
+    #polaroid2-wrap {
+      top: 60px;
+      left: 0;
+      transform: translateX(-110%);
+    }
+    #polaroid2-wrap.visible {
+      transform: translateX(0);
+    }
+
+    /* ── SKY BODY (sun/moon arc) ── */
+    #sky-body {
+      position: fixed;
+      z-index: 5;
+      font-size: 2.4rem;
+      line-height: 1;
+      pointer-events: none;
+      display: none;
+      transform: translate(-50%, -50%);
+    }
+    #content {
+      min-height: 100svh;
+      background: url('bg.jpg') center center / cover no-repeat fixed;
+      color: #fff;
+      padding: 60px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      font-family: 'Exo', sans-serif;
+      font-size: 1rem;
+      line-height: 1.7;
+      text-align: justify;
+      position: relative;
+    }
+
+    #content::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    #content p {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+    }
+
+    #content p.visible {
+      opacity: 1;
+      transform: none;
+    }
+    /* ── FADE OVERLAY ── */
+    #fade-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0s;
+    }
+
+    #fade-overlay.fading-in {
+      transition: opacity 8s linear;
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    #to-be-continued {
+      color: #fff;
+      font-family: 'Exo', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      opacity: 0;
+      transition: opacity 2s ease;
+    }
+
+    #to-be-continued.visible {
+      opacity: 1;
+    }
+    #finale-plane {
+      position: fixed;
+      z-index: 101;
+      font-size: 2.4rem;
+      line-height: 1;
+      pointer-events: none;
+      display: none;
+      transform: translate(-50%, -50%) rotate(-90deg);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- FADE OVERLAY -->
+  <div id="fade-overlay">
+    <span id="to-be-continued">to be continued...</span>
+  </div>
+
+  <!-- FINALE PLANE -->
+  <span id="finale-plane">✈️</span>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div id="hero-bg"></div>
+    <img id="title-img" src="title.png" alt="Iva & Simo — A Sofia Story" />
+    <button id="new-game-btn">New game?</button>
+    <div id="plane-strip">
+      <span id="plane">🛫</span>
+    </div>
+  </section>
+
+  <!-- CONTENT -->
+  <section id="content">
+    <p>Of course the story doesn't end at the tram stop. Iva packed her bags two weeks later and got on a plane to her sweetest boy in Sofia. Simo picked her up at the airport, as he couldn't wait any longer to kiss her pretty lips again.</p>
+    <p>She was supposed to be home an hour later, but they sat outside her place for too long and her mother was getting uppity. For the few days they had together, they were constantly being pulled away by work or friends or relatives.</p>
+    <p>And though they spent too much time just hugging on the sofa at Iva's place, it never seemed enough. There was a single day where they didn't need to text each other a 'good morning' and 'good night'. Simo didn't know it yet, but that's all he needed to have a perfect day.</p>
+  </section>
+
+  <!-- SKY BODY -->
+  <span id="sky-body"></span>
+
+  <!-- POLAROID 1 — bottom right, video -->
+  <div id="polaroid-wrap" class="polaroid-wrap">
+    <div class="polaroid-box">
+      <video id="clip" src="clip.mp4" muted playsinline></video>
+      <div class="lyric-wrap">
+        <span id="lyric-text" class="lyric-text"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- POLAROID 2 — top left, last frame image -->
+  <div id="polaroid2-wrap" class="polaroid-wrap">
+    <div class="polaroid-box">
+      <img id="last-frame" src="last-frame.png" alt="" />
+      <div class="lyric-wrap">
+        <span id="lyric2-text" class="lyric-text"></span>
+      </div>
+    </div>
+  </div>
+
+  <audio id="audio" src="selfless.mp3" preload="auto"></audio>
+
+  <script>
+    const btn         = document.getElementById('new-game-btn');
+    const strip       = document.getElementById('plane-strip');
+    const plane       = document.getElementById('plane');
+    const audio       = document.getElementById('audio');
+    const content     = document.getElementById('content');
+    const polaroid    = document.getElementById('polaroid-wrap');
+    const clip        = document.getElementById('clip');
+    const lyricText   = document.getElementById('lyric-text');
+    const polaroid2   = document.getElementById('polaroid2-wrap');
+    const lyric2Text  = document.getElementById('lyric2-text');
+    const fadeOverlay  = document.getElementById('fade-overlay');
+    const tbc          = document.getElementById('to-be-continued');
+    const finalePlane  = document.getElementById('finale-plane');
+
+    // Plane timings (ms)
+    const LIFTOFF = 1500;
+    const FLYING  = 5000;
+    const LANDING = 1500;
+    const TOTAL   = LIFTOFF + FLYING + LANDING;
+
+    // Polaroid 1: 39s–62s
+    const P1_IN  = 39000;
+    const P1_OUT = 63000;
+
+    // Polaroid 2: 2:14–2:45 = 134s–165s
+    const P2_IN  = 134000;
+    const P2_OUT = 165000;
+
+    // Lyrics 1 — offsets from P1_IN (39s)
+    const LYRICS1 = [
+      { at: 0,     text: "Please don't be long\n'cause I want your love" },
+      { at: 8000,  text: "I don't have love\nwithout your arm" },
+      { at: 16000, text: "Life is too short,\nbut I will live for you" },
+    ];
+
+    // Lyrics 2 — offsets from P2_IN (134s = 2:14)
+    // 2:14→2:21 = 0s, 2:21→2:29 = 7s, 2:29→2:37 = 15s, 2:37→2:45 = 23s
+    const LYRICS2 = [
+      { at: 0,     text: "Please don't be long\n'cause I want your arm" },
+      { at: 7000,  text: "I don't have fun\nwithout your love" },
+      { at: 15000, text: "Life is too short,\nbut I will live for you" },
+      { at: 23000, text: "You're mucking off,\nbut I will live for you, my selfless love" },
+    ];
+
+    function setLyric(el, text) {
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.textContent = '';
+        text.split('\n').forEach((line, i) => {
+          if (i > 0) el.appendChild(document.createElement('br'));
+          el.appendChild(document.createTextNode(line));
+        });
+        el.style.opacity = '1';
+      }, 200);
+    }
+
+    // Bounce-reverse playback for clip
+    let bounceDir = 1;
+    let bounceRAF = null;
+    const STEP_MS = 33;
+
+    function startBounce() {
+      clip.pause();
+      bounceDir = 1;
+      clip.currentTime = 0;
+      function tick() {
+        clip.currentTime = Math.max(0, Math.min(clip.duration, clip.currentTime + bounceDir * (STEP_MS / 1000)));
+        if (clip.currentTime >= clip.duration) bounceDir = -1;
+        if (clip.currentTime <= 0)             bounceDir =  1;
+        bounceRAF = setTimeout(tick, STEP_MS);
+      }
+      bounceRAF = setTimeout(tick, STEP_MS);
+    }
+
+    function stopBounce() {
+      clearTimeout(bounceRAF);
+      bounceRAF = null;
+    }
+
+    const skyBody = document.getElementById('sky-body');
+
+    // Sky arc: starts at 1:35 = 95s, 7 cycles × 6s each
+    // Each cycle: sun 3s then moon 3s. Cycle 6 (index 5) uses 🌕 instead of 🌙
+    const SKY_START   = 95000;
+    const CYCLE_MS    = 5000;
+    const HALF_MS     = 2500;
+    const TOTAL_CYCLES = 7;
+
+    function runSkyArc(cycleIndex) {
+      if (cycleIndex >= TOTAL_CYCLES) {
+        skyBody.style.display = 'none';
+        return;
+      }
+      const moonEmoji = cycleIndex === 5 ? '🌕' : '🌙';
+
+      function animateBody(emoji, duration, onDone) {
+        skyBody.textContent = emoji;
+        skyBody.style.display = 'block';
+        skyBody.style.opacity = '1';
+        const start = performance.now();
+        function frame(now) {
+          const t = Math.min((now - start) / duration, 1);
+          // Quadratic bezier: P0=(−4vw, 70vh), P1=(50vw, 5vh), P2=(104vw, 70vh)
+          const w = window.innerWidth, h = window.innerHeight;
+          const p0x = -0.04 * w, p0y = 0.70 * h;
+          const p1x =  0.50 * w, p1y = 0.05 * h;
+          const p2x =  1.04 * w, p2y = 0.70 * h;
+          const x = (1-t)*(1-t)*p0x + 2*(1-t)*t*p1x + t*t*p2x;
+          const y = (1-t)*(1-t)*p0y + 2*(1-t)*t*p1y + t*t*p2y;
+          skyBody.style.left = x + 'px';
+          skyBody.style.top  = y + 'px';
+          // fade out last 10%
+          skyBody.style.opacity = t > 0.9 ? String(1 - (t - 0.9) / 0.1) : '1';
+          if (t < 1) requestAnimationFrame(frame);
+          else onDone();
+        }
+        requestAnimationFrame(frame);
+      }
+
+      // Sun then moon
+      animateBody('☀️', HALF_MS, () => {
+        animateBody(moonEmoji, HALF_MS, () => {
+          runSkyArc(cycleIndex + 1);
+        });
+      });
+    }
+
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+
+      // Plane animation
+      strip.style.display = 'block';
+      plane.textContent = '🛫';
+      plane.style.left = '-60px';
+
+      plane.style.transition = `left ${LIFTOFF}ms linear`;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        plane.style.left = '10%';
+      }));
+
+      setTimeout(() => {
+        plane.textContent = '✈️';
+        plane.style.transition = `left ${FLYING}ms linear`;
+        plane.style.left = '88%';
+      }, LIFTOFF);
+
+      setTimeout(() => {
+        plane.textContent = '🛬';
+        plane.style.transition = `left ${LANDING}ms linear`;
+        plane.style.left = 'calc(100% + 20px)';
+      }, LIFTOFF + FLYING);
+
+      setTimeout(() => {
+        document.body.style.overflow = '';
+        content.scrollIntoView({ behavior: 'smooth' });
+        content.querySelectorAll('p').forEach((p, i) => {
+          setTimeout(() => p.classList.add('visible'), i * 400);
+        });
+      }, TOTAL + 200);
+
+      // Sky arc at 1:35
+      setTimeout(() => runSkyArc(0), SKY_START);
+
+      // Polaroid 1 in
+      setTimeout(() => {
+        polaroid.classList.add('visible');
+        startBounce();
+        LYRICS1.forEach(({ at, text }) => {
+          setTimeout(() => setLyric(lyricText, text), at);
+        });
+      }, P1_IN);
+
+      // Polaroid 1 out
+      setTimeout(() => {
+        polaroid.classList.remove('visible');
+        stopBounce();
+      }, P1_OUT);
+
+      // Polaroid 2 in
+      setTimeout(() => {
+        polaroid2.classList.add('visible');
+        LYRICS2.forEach(({ at, text }) => {
+          setTimeout(() => setLyric(lyric2Text, text), at);
+        });
+      }, P2_IN);
+
+      // Polaroid 2 out
+      setTimeout(() => {
+        polaroid2.classList.remove('visible');
+      }, P2_OUT);
+
+      // Fade to black at 3:25 = 205s, over 8s (completes at 3:33)
+      setTimeout(() => {
+        fadeOverlay.classList.add('fading-in');
+        // Finale plane flies bottom-right → top-left at 45°, then show TBC
+        setTimeout(() => {
+          const w = window.innerWidth, h = window.innerHeight;
+          const PLANE_DUR = 1800;
+          finalePlane.style.display = 'block';
+          const startT = performance.now();
+          function planeFly(now) {
+            const t = Math.min((now - startT) / PLANE_DUR, 1);
+            // straight 45° diagonal: start (w+40, h+40) → end (-40, -40)
+            const x = (w + 40) - t * (w + 80);
+            const y = (h + 40) - t * (h + 80);
+            finalePlane.style.left = x + 'px';
+            finalePlane.style.top  = y + 'px';
+            if (t < 1) requestAnimationFrame(planeFly);
+            else {
+              finalePlane.style.display = 'none';
+              tbc.classList.add('visible');
+            }
+          }
+          requestAnimationFrame(planeFly);
+        }, 8000);
+      }, 205000);
+    });
+
+    // When song ends: scroll back to hero, reset everything
+    audio.addEventListener('ended', () => {
+      // small delay so overlay is fully black first
+      setTimeout(() => {
+        // scroll to top (locked again)
+        document.body.style.overflow = 'hidden';
+        window.scrollTo({ top: 0 });
+
+        // reset content paragraphs
+        content.querySelectorAll('p').forEach(p => p.classList.remove('visible'));
+
+        // reset polaroids
+        polaroid.classList.remove('visible');
+        polaroid2.classList.remove('visible');
+        stopBounce();
+
+        // reset plane
+        strip.style.display = 'none';
+        plane.style.transition = 'none';
+        plane.style.left = '-60px';
+
+        // reset sky
+        skyBody.style.display = 'none';
+
+        // fade overlay back out over 1.5s, then re-enable button
+        fadeOverlay.style.transition = 'opacity 1.5s ease';
+        fadeOverlay.style.opacity = '0';
+        fadeOverlay.addEventListener('transitionend', () => {
+          fadeOverlay.classList.remove('fading-in');
+          fadeOverlay.style.transition = '';
+          fadeOverlay.style.opacity = '';
+          tbc.classList.remove('visible');
+          btn.disabled = false;
+        }, { once: true });
+      }, 800);
+    });
+  </script>
+
+</body>
+</html>
